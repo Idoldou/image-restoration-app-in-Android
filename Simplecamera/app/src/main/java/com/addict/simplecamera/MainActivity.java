@@ -7,11 +7,12 @@ import android.view.View;
 import android.widget.Button;
 
 public class MainActivity extends Activity {
+
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.layout);
 
-        CameraPreview mPreview = new CameraPreview(this);
+        CameraPreview mPreview = new CameraPreview (this);
         FrameLayout preview = (FrameLayout) findViewById(R.id.camera_preview);
         preview.addView(mPreview);
 
@@ -23,5 +24,6 @@ public class MainActivity extends Activity {
                         new SettingsFragment()).addToBackStack(null).commit();
             }
         });
+
     }
 }

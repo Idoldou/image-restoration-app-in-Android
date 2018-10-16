@@ -1,9 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
     <ListPreference
-        android:defaultValue="100"
-        android:entries="@array/pref_jpegQuality"
-        android:entryValues="@array/pref_jpegQuality"
-        android:key="jpeg_quality"
-        android:title="quality" />
+        android:defaultValue="RGB"
+        android:entries="@array/pref_jpegGreyscale"
+        android:entryValues="@array/pref_jpegGreyscale"
+        android:key="jpeg_greyscale"
+        android:title="RGB to grey scale" />
+    <ListPreference
+        android:defaultValue="Original Picture"
+        android:entries="@array/pref_jpegNoise"
+        android:entryValues="@array/pref_jpegNoise"
+        android:key="jpeg_noise"
+        android:title="Noise" />
+    <ListPreference
+        android:defaultValue="Original Picture"
+        android:entries="@array/pref_jpegInpainting"
+        android:entryValues="@array/pref_jpegInpainting"
+        android:key="Inpainting_mode"
+        android:title="Inpainting" />
 </PreferenceScreen>

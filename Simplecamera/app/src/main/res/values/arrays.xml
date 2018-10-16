@@ -1,11 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string-array name="pref_jpegQuality">
-        <item>100</item>
-        <item>90</item>
-        <item>80</item>
-        <item>70</item>
-        <item>60</item>
-        <item>50</item>
+    <string-array name="pref_jpegGreyscale">
+        <item>RGB</item>
+        <item>Grey Scale</item>
+    </string-array>
+    <string-array name="pref_jpegNoise">
+        <item>Original Picture</item>
+        <item>Add noise</item>
+        <item>Denoise</item>
+    </string-array>
+    <string-array name="pref_jpegInpainting">
+        <item>Original Picture</item>
+        <item>Inpainting</item>
     </string-array>
 </resources>
