@@ -2,13 +2,16 @@ package com.addict.simplecamera;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
 import android.hardware.Camera;
 import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
+import android.media.ThumbnailUtils;
 import android.net.Uri;
 import android.os.Environment;
 import android.preference.Preference;
 import android.preference.PreferenceManager;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -44,6 +47,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
                     FileOutputStream fos = new FileOutputStream(pictureFile);
                     fos.write(data);
                     fos.close();
+
                     view.setImageURI(outputMediaFileUri);
                     camera.startPreview();
                 } catch (FileNotFoundException e) {
