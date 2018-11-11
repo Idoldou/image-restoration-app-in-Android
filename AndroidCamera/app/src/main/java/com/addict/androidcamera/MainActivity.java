@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Camera;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
@@ -41,17 +42,21 @@ import android.widget.Toast;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
+
 public class MainActivity extends AppCompatActivity {
 
     ImageView ivImage;
-    Integer REQUEST_CAMERA=1,SELECT_FILE=0;
-    String mCurrentPhotoPath;
-    private static final String IMAGE_DIRECTORY_NAME = "VLEMONN";
+    Integer REQUEST_CAMERA=1,SELECT_FILE=0,SAVE_IMAGE=2;
+    Bitmap b;
+
+
 
 
     @Override
@@ -60,6 +65,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+
 
 
         ivImage =(ImageView)findViewById(R.id.ivImage);
@@ -79,7 +86,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void SelectImage() {
 
-        final CharSequence[] items = {"Camera", "Gallery", "Cancel"};
+        final CharSequence[] items = {"Camera", "Gallery", "Save",};
         AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
         builder.setTitle("Add Image");
         builder.setItems(items, new DialogInterface.OnClickListener() {
@@ -90,86 +97,74 @@ public class MainActivity extends AppCompatActivity {
                     Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
                     startActivityForResult(intent, REQUEST_CAMERA);
 
+
                 } else if (items[i].equals("Gallery")) {
 
                     Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-                    intent.setType("images/*");
+                    intent.setType("image/*");
                     startActivityForResult(intent.createChooser(intent,"Select File"), SELECT_FILE);
 
-                } else if (items[i].equals("Cancal")) {
+                } else if (items[i].equals("Save")) {
 
-                    dialogInterface.dismiss();
+
+                    savePhotoToMySdCard(b);
+                    Toast.makeText(getApplicationContext(), "Photo saved to sd card!", Toast.LENGTH_SHORT).show();
+
+
                 }
             }
         });
         builder.show();
     }
+    private void savePhotoToMySdCard(Bitmap bit){
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HH_mm_ss");
+        String pname = sdf.format(new Date());
+        String root = Environment.getExternalStorageDirectory().toString();
+        File folder = new File(root+"/SCC_Photos");
+        folder.mkdirs();
+        File my_file = new File(folder, pname+".png");
+        try {
+            FileOutputStream stream = new FileOutputStream(my_file);
+            bit.compress(Bitmap.CompressFormat.PNG, 80, stream);
+            stream.flush();
+            stream.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+
 
     @Override
-    public  void onActivityResult(int requestCode,int resultCode,Intent data){
+    protected void onActivityResult(int requestCode,int resultCode,Intent data){
 
         super.onActivityResult(requestCode,resultCode,data);
 
+        //Did the user choose OK? IF so , the code inside these curly braces will execute.
         if(resultCode== Activity.RESULT_OK){
 
             if(requestCode==REQUEST_CAMERA){
+                //we are hearing back from the camera.
 
-                Bundle bundle = data.getExtras();
-                final Bitmap bmp = (Bitmap) bundle.get("data");
-                ivImage.setImageBitmap(bmp)
-                ;
+               Bundle bundle = data.getExtras();
+                b = (Bitmap) bundle.get("data");
+                //at this point,we have the image from the camera.
+                ivImage.setImageBitmap(b);
+
             }else if (requestCode==SELECT_FILE){
 
                 Uri selectedImageUri =data.getData();
                 ivImage.setImageURI(selectedImageUri);
 
+            }else if (requestCode==SAVE_IMAGE){
+
             }
+
         }
 
-    }
-    private File createImageFile4()
-    {
-        // External sdcard location
-        File mediaStorageDir = new File(
-                Environment
-                        .getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
-                IMAGE_DIRECTORY_NAME);
-        // Create the storage directory if it does not exist
-        if (!mediaStorageDir.exists()) {
-            if (!mediaStorageDir.mkdirs()) {
-                displayMessage(getBaseContext(),"Unable to create directory.");
-                return null;
-            }
-        }
-
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss",
-                Locale.getDefault()).format(new Date());
-        File mediaFile = new File(mediaStorageDir.getPath() + File.separator
-                + "IMG_" + timeStamp + ".jpg");
-
-        return mediaFile;
-
-    }
-
-    private File createImageFile() throws IOException {
-        // Create an image file name
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        String imageFileName = "JPEG_" + timeStamp + "_";
-        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
-        File image = File.createTempFile(
-                imageFileName,  /* prefix */
-                ".jpg",         /* suffix */
-                storageDir      /* directory */
-        );
-
-        // Save a file: path for use with ACTION_VIEW intents
-        mCurrentPhotoPath = image.getAbsolutePath();
-        return image;
-    }
-
-    private void displayMessage(Context context, String message)
-    {
-        Toast.makeText(context,message,Toast.LENGTH_LONG).show();
     }
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
