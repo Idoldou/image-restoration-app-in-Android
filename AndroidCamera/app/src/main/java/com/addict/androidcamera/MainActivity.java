@@ -5,6 +5,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Camera;
+import android.graphics.ColorSpace;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
@@ -40,6 +41,11 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import org.opencv.android.OpenCVLoader;
+import org.opencv.android.Utils;
+import org.opencv.core.Mat;
+import org.opencv.imgproc.Imgproc;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -53,10 +59,9 @@ import java.util.Locale;
 public class MainActivity extends AppCompatActivity {
 
     ImageView ivImage;
-    Integer REQUEST_CAMERA=1,SELECT_FILE=0,SAVE_IMAGE=2;
-    Bitmap b;
-
-
+    Integer REQUEST_CAMERA=1,SELECT_FILE=0,SAVE_IMAGE=2,GRAY_SCALE=3;
+    Bitmap imageBitmap;
+    Bitmap grayBitmap;
 
 
     @Override
@@ -66,10 +71,9 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-
-
-
         ivImage =(ImageView)findViewById(R.id.ivImage);
+        OpenCVLoader.initDebug();
+
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -83,12 +87,11 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-
     private void SelectImage() {
 
-        final CharSequence[] items = {"Camera", "Gallery", "Save",};
+        final CharSequence[] items = {"Camera", "Gallery", "Save","GreyScale","AddNoise"};
         AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-        builder.setTitle("Add Image");
+        builder.setTitle("Functions");
         builder.setItems(items, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
@@ -107,10 +110,14 @@ public class MainActivity extends AppCompatActivity {
                 } else if (items[i].equals("Save")) {
 
 
-                    savePhotoToMySdCard(b);
+                    savePhotoToMySdCard(imageBitmap);
+
                     Toast.makeText(getApplicationContext(), "Photo saved to sd card!", Toast.LENGTH_SHORT).show();
 
 
+                }else if (items[i].equals("GreyScale")) {
+
+                    convertToGray(ivImage);
                 }
             }
         });
@@ -135,8 +142,30 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public  void convertToGray(View v)
+    {
+        Mat Rgba = new Mat();
+        Mat grayMat = new Mat();
+
+        BitmapFactory.Options o = new BitmapFactory.Options();
+        o.inDither=false;
+        o.inSampleSize=4;
+
+        int width = imageBitmap.getWidth();
+        int height= imageBitmap.getHeight();
 
 
+        grayBitmap=imageBitmap.createBitmap(width,height,Bitmap.Config.RGB_565);
+
+        //bitmat to MAT
+
+        Utils.bitmapToMat(imageBitmap,Rgba);
+        Imgproc.cvtColor(Rgba,grayMat,Imgproc.COLOR_RGB2GRAY);
+        Utils.matToBitmap(grayMat,grayBitmap);
+        ivImage.setImageBitmap(grayBitmap);
+
+
+    }
 
     @Override
     protected void onActivityResult(int requestCode,int resultCode,Intent data){
@@ -150,9 +179,9 @@ public class MainActivity extends AppCompatActivity {
                 //we are hearing back from the camera.
 
                Bundle bundle = data.getExtras();
-                b = (Bitmap) bundle.get("data");
+                imageBitmap = (Bitmap) bundle.get("data");
                 //at this point,we have the image from the camera.
-                ivImage.setImageBitmap(b);
+                ivImage.setImageBitmap(imageBitmap);
 
             }else if (requestCode==SELECT_FILE){
 
@@ -161,19 +190,21 @@ public class MainActivity extends AppCompatActivity {
 
             }else if (requestCode==SAVE_IMAGE){
 
+            }else if (requestCode==GRAY_SCALE){
+
             }
 
         }
 
-    }
-    @Override
+    }}
+    /*@Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
     }
 
-    @Override
+   @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
@@ -187,4 +218,4 @@ public class MainActivity extends AppCompatActivity {
 
         return super.onOptionsItemSelected(item);
     }
-}
+}  */
