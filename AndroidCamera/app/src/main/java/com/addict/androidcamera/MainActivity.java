@@ -59,9 +59,10 @@ import java.util.Locale;
 public class MainActivity extends AppCompatActivity {
 
     ImageView ivImage;
-    Integer REQUEST_CAMERA=1,SELECT_FILE=0,SAVE_IMAGE=2,GRAY_SCALE=3;
+    Integer REQUEST_CAMERA=1,SELECT_FILE=0,SAVE_IMAGE=2,GRAY_SCALE=3,OPEN_GALLERY=4;
     Bitmap imageBitmap;
     Bitmap grayBitmap;
+    Uri imageUri;
 
 
     @Override
@@ -103,9 +104,13 @@ public class MainActivity extends AppCompatActivity {
 
                 } else if (items[i].equals("Gallery")) {
 
-                    Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+
+                    openGallery(ivImage);
+
+                   /* Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
                     intent.setType("image/*");
-                    startActivityForResult(intent.createChooser(intent,"Select File"), SELECT_FILE);
+                    startActivityForResult(intent.createChooser(intent,"Select File"), SELECT_FILE);*/
+
 
                 } else if (items[i].equals("Save")) {
 
@@ -118,6 +123,7 @@ public class MainActivity extends AppCompatActivity {
                 }else if (items[i].equals("GreyScale")) {
 
                     convertToGray(ivImage);
+
                 }
             }
         });
@@ -142,29 +148,28 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public void openGallery (View v){
+
+        Intent myIntent = new Intent(Intent.ACTION_PICK,MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+
+        startActivityForResult(myIntent,4);
+    }
+
     public  void convertToGray(View v)
     {
         Mat Rgba = new Mat();
         Mat grayMat = new Mat();
-
         BitmapFactory.Options o = new BitmapFactory.Options();
         o.inDither=false;
         o.inSampleSize=4;
-
         int width = imageBitmap.getWidth();
         int height= imageBitmap.getHeight();
-
-
         grayBitmap=imageBitmap.createBitmap(width,height,Bitmap.Config.RGB_565);
-
         //bitmat to MAT
-
         Utils.bitmapToMat(imageBitmap,Rgba);
         Imgproc.cvtColor(Rgba,grayMat,Imgproc.COLOR_RGB2GRAY);
         Utils.matToBitmap(grayMat,grayBitmap);
         ivImage.setImageBitmap(grayBitmap);
-
-
     }
 
     @Override
@@ -180,24 +185,32 @@ public class MainActivity extends AppCompatActivity {
 
                Bundle bundle = data.getExtras();
                 imageBitmap = (Bitmap) bundle.get("data");
+
                 //at this point,we have the image from the camera.
                 ivImage.setImageBitmap(imageBitmap);
 
-            }else if (requestCode==SELECT_FILE){
+            }else if (requestCode==OPEN_GALLERY){
 
-                Uri selectedImageUri =data.getData();
-                ivImage.setImageURI(selectedImageUri);
+                imageUri=data.getData();
+               /* Uri selectedImageUri =data.getData();
+                ivImage.setImageURI(selectedImageUri);*/
+                try{
+                    imageBitmap=MediaStore.Images.Media.getBitmap(this.getContentResolver(),imageUri);
+                }catch (IOException e)
+                {
+                    e.printStackTrace();
+                }
+               ivImage.setImageBitmap(imageBitmap);
 
             }else if (requestCode==SAVE_IMAGE){
 
             }else if (requestCode==GRAY_SCALE){
 
-            }
+            }}
 
-        }
+    }
 
-    }}
-    /*@Override
+    @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
@@ -218,4 +231,4 @@ public class MainActivity extends AppCompatActivity {
 
         return super.onOptionsItemSelected(item);
     }
-}  */
+}
