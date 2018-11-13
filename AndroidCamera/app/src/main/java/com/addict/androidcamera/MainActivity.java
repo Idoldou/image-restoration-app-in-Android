@@ -73,6 +73,7 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         ivImage =(ImageView)findViewById(R.id.ivImage);
+
         OpenCVLoader.initDebug();
 
 
@@ -103,7 +104,6 @@ public class MainActivity extends AppCompatActivity {
 
 
                 } else if (items[i].equals("Gallery")) {
-
 
                     openGallery(ivImage);
 
@@ -164,8 +164,8 @@ public class MainActivity extends AppCompatActivity {
         o.inSampleSize=4;
         int width = imageBitmap.getWidth();
         int height= imageBitmap.getHeight();
-        grayBitmap=imageBitmap.createBitmap(width,height,Bitmap.Config.RGB_565);
-        //bitmat to MAT
+        grayBitmap=Bitmap.createBitmap(width,height,Bitmap.Config.RGB_565);
+        //bitmap to MAT
         Utils.bitmapToMat(imageBitmap,Rgba);
         Imgproc.cvtColor(Rgba,grayMat,Imgproc.COLOR_RGB2GRAY);
         Utils.matToBitmap(grayMat,grayBitmap);
@@ -205,6 +205,8 @@ public class MainActivity extends AppCompatActivity {
             }else if (requestCode==SAVE_IMAGE){
 
             }else if (requestCode==GRAY_SCALE){
+
+
 
             }}
 
