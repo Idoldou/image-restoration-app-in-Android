@@ -62,6 +62,7 @@ public class MainActivity extends AppCompatActivity {
     Integer REQUEST_CAMERA=1,SELECT_FILE=0,SAVE_IMAGE=2,GRAY_SCALE=3,OPEN_GALLERY=4;
     Bitmap imageBitmap;
     Bitmap grayBitmap;
+    Bitmap noiseBitmap;
     Uri imageUri;
 
 
@@ -124,6 +125,10 @@ public class MainActivity extends AppCompatActivity {
 
                     convertToGray(ivImage);
 
+                }else if (items[i].equals("AddNoise")) {
+
+                    addGaussianNoise(noiseBitmap);
+
                 }
             }
         });
@@ -170,6 +175,22 @@ public class MainActivity extends AppCompatActivity {
         Imgproc.cvtColor(Rgba,grayMat,Imgproc.COLOR_RGB2GRAY);
         Utils.matToBitmap(grayMat,grayBitmap);
         ivImage.setImageBitmap(grayBitmap);
+    }
+
+    public void addGaussianNoise(View v){
+
+
+        Mat grayMat = new Mat();
+        Mat noiseMat= new Mat();
+        BitmapFactory.Options o = new BitmapFactory.Options();
+        o.inDither=false;
+        o.inSampleSize=1;
+        int width = grayBitmap.getWidth();
+        int height= grayBitmap.getHeight();
+        grayBitmap=Bitmap.createBitmap(width,height,Bitmap.);
+        //bitmap to MAT
+        Utils.bitmapToMat(noiseBitmap,grayMat);
+        ivImage.setImageBitmap(noiseBitmap);
     }
 
     @Override
