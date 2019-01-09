@@ -43,7 +43,9 @@ import android.widget.Toast;
 
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
+import org.opencv.core.Core;
 import org.opencv.core.Mat;
+import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 
 import java.io.File;
@@ -59,12 +61,12 @@ import java.util.Locale;
 public class MainActivity extends AppCompatActivity {
 
     ImageView ivImage;
-    Integer REQUEST_CAMERA=1,SELECT_FILE=0,SAVE_IMAGE=2,GRAY_SCALE=3,OPEN_GALLERY=4;
+    Integer REQUEST_CAMERA=1,SAVE_IMAGE=2,GRAY_SCALE=3,OPEN_GALLERY=4;
     Bitmap imageBitmap;
     Bitmap grayBitmap;
     Bitmap noiseBitmap;
     Uri imageUri;
-
+    private Mat GaussianNoise;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -118,7 +120,7 @@ public class MainActivity extends AppCompatActivity {
 
                     savePhotoToMySdCard(imageBitmap);
 
-                    Toast.makeText(getApplicationContext(), "Photo saved to sd card!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getApplicationContext(), "Photo has been saved to SD card!", Toast.LENGTH_SHORT).show();
 
 
                 }else if (items[i].equals("GreyScale")) {
@@ -127,7 +129,7 @@ public class MainActivity extends AppCompatActivity {
 
                 }else if (items[i].equals("AddNoise")) {
 
-                    addGaussianNoise(noiseBitmap);
+                    addGaussianNoise(ivImage);
 
                 }
             }
@@ -177,19 +179,26 @@ public class MainActivity extends AppCompatActivity {
         ivImage.setImageBitmap(grayBitmap);
     }
 
+
     public void addGaussianNoise(View v){
 
-
+        int variance=0;
+        double mean=0.05;
         Mat grayMat = new Mat();
-        Mat noiseMat= new Mat();
         BitmapFactory.Options o = new BitmapFactory.Options();
         o.inDither=false;
         o.inSampleSize=1;
         int width = grayBitmap.getWidth();
         int height= grayBitmap.getHeight();
-        grayBitmap=Bitmap.createBitmap(width,height,Bitmap.);
+        noiseBitmap=Bitmap.createBitmap(width,height,Bitmap.Config.RGB_565);
         //bitmap to MAT
-        Utils.bitmapToMat(noiseBitmap,grayMat);
+        Utils.bitmapToMat(grayBitmap,grayMat);
+        Mat noiseMat = new Mat(grayMat.rows(), grayMat.cols(), grayMat.type());
+        java.util.Random r = new java.util.Random();
+        double noise = r.nextGaussian() * Math.sqrt(variance) + mean;
+        noiseMat.setTo(new Scalar(noise, noise, noise));
+        Core.add(grayMat,noiseMat,grayMat);
+        Utils.matToBitmap(grayMat,noiseBitmap);
         ivImage.setImageBitmap(noiseBitmap);
     }
 
