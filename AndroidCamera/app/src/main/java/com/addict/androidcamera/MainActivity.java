@@ -45,6 +45,7 @@ import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfDouble;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 
@@ -66,7 +67,7 @@ public class MainActivity extends AppCompatActivity {
     Bitmap grayBitmap;
     Bitmap noiseBitmap;
     Uri imageUri;
-    private Mat GaussianNoise;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -166,9 +167,9 @@ public class MainActivity extends AppCompatActivity {
     {
         Mat Rgba = new Mat();
         Mat grayMat = new Mat();
-        BitmapFactory.Options o = new BitmapFactory.Options();
+        /*BitmapFactory.Options o = new BitmapFactory.Options();
         o.inDither=false;
-        o.inSampleSize=4;
+        o.inSampleSize=4;*/
         int width = imageBitmap.getWidth();
         int height= imageBitmap.getHeight();
         grayBitmap=Bitmap.createBitmap(width,height,Bitmap.Config.RGB_565);
@@ -181,25 +182,22 @@ public class MainActivity extends AppCompatActivity {
 
 
     public void addGaussianNoise(View v){
-
-        int variance=0;
-        double mean=0.05;
-        Mat grayMat = new Mat();
-        BitmapFactory.Options o = new BitmapFactory.Options();
-        o.inDither=false;
-        o.inSampleSize=1;
-        int width = grayBitmap.getWidth();
-        int height= grayBitmap.getHeight();
-        noiseBitmap=Bitmap.createBitmap(width,height,Bitmap.Config.RGB_565);
-        //bitmap to MAT
-        Utils.bitmapToMat(grayBitmap,grayMat);
-        Mat noiseMat = new Mat(grayMat.rows(), grayMat.cols(), grayMat.type());
-        java.util.Random r = new java.util.Random();
-        double noise = r.nextGaussian() * Math.sqrt(variance) + mean;
-        noiseMat.setTo(new Scalar(noise, noise, noise));
-        Core.add(grayMat,noiseMat,grayMat);
-        Utils.matToBitmap(grayMat,noiseBitmap);
+        Mat img = new Mat();
+        Utils.bitmapToMat(grayBitmap,img);
+        noiseBitmap = grayBitmap.copy(Bitmap.Config.RGB_565,true);
+        Mat noiseMat = new Mat(img.size(), img.type());
+        MatOfDouble mean = new MatOfDouble ();
+        MatOfDouble dev = new MatOfDouble ();
+        Core.meanStdDev(img,mean,dev);
+        Core.randn(noiseMat,mean.get(0,0)[0], dev.get(0,0)[0]);
+        Core.add(img,noiseMat,img);
+        Core.normalize(img,img,0,255,Core.NORM_MINMAX);
+        Utils.matToBitmap(img,noiseBitmap);
         ivImage.setImageBitmap(noiseBitmap);
+    }
+
+    public void denoiseFirst(View v){
+
     }
 
     @Override
@@ -236,8 +234,7 @@ public class MainActivity extends AppCompatActivity {
 
             }else if (requestCode==GRAY_SCALE){
 
-
-
+                ivImage.setImageBitmap(grayBitmap);
             }}
 
     }
