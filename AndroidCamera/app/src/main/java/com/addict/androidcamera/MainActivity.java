@@ -47,6 +47,7 @@ import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfDouble;
 import org.opencv.core.Scalar;
+import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
 import java.io.File;
@@ -66,6 +67,10 @@ public class MainActivity extends AppCompatActivity {
     Bitmap imageBitmap;
     Bitmap grayBitmap;
     Bitmap noiseBitmap;
+    Bitmap medianBitmap;
+    Bitmap meanBitmap;
+    Bitmap GaussianblurBitmap;
+    Bitmap BilateralFilterBitmap;
     Uri imageUri;
 
 
@@ -95,7 +100,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void SelectImage() {
 
-        final CharSequence[] items = {"Camera", "Gallery", "Save","GreyScale","AddNoise"};
+        final CharSequence[] items = {"Camera", "Gallery", "Save","GreyScale","AddNoise","MeanFilter","MedianFilter","GaussianBlur","BilateralFilter","Inpainting"};
         AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
         builder.setTitle("Functions");
         builder.setItems(items, new DialogInterface.OnClickListener() {
@@ -132,6 +137,22 @@ public class MainActivity extends AppCompatActivity {
 
                     addGaussianNoise(ivImage);
 
+                }else if (items[i].equals("MedianFilter")) {
+
+                    MedianFilter(ivImage);
+
+                }
+                else if (items[i].equals("MeanFilter")){
+
+                    MeanFilter(ivImage);
+
+                }else if (items[i].equals("GaussianBlur")){
+
+                    Gaussianblur(ivImage);
+
+                }else if (items[i].equals("BilateralFilter")){
+
+                    BilateralFilter(ivImage);
                 }
             }
         });
@@ -196,10 +217,44 @@ public class MainActivity extends AppCompatActivity {
         ivImage.setImageBitmap(noiseBitmap);
     }
 
-    public void denoiseFirst(View v){
-
+    public void MedianFilter(View v){
+        Mat img = new Mat();
+        Utils.bitmapToMat(noiseBitmap,img);
+        medianBitmap = noiseBitmap.copy(Bitmap.Config.RGB_565,true);
+        Mat median = new  Mat(img.size(),img.type());
+        Imgproc.medianBlur(img,median,7);
+        Utils.matToBitmap(median,medianBitmap);
+        ivImage.setImageBitmap(medianBitmap);
+        
+    }
+    public void MeanFilter(View v){
+        Mat img = new Mat();
+        Utils.bitmapToMat(noiseBitmap,img);
+        meanBitmap=noiseBitmap.copy(Bitmap.Config.RGB_565,true);
+        Mat mean = new  Mat(img.size(),img.type());
+        Imgproc.blur(img,mean,new Size(7,7));
+        Utils.matToBitmap(mean,meanBitmap);
+        ivImage.setImageBitmap(meanBitmap);
     }
 
+    public  void Gaussianblur(View v){
+        Mat img = new Mat();
+        Utils.bitmapToMat(noiseBitmap,img);
+        GaussianblurBitmap=noiseBitmap.copy(Bitmap.Config.RGB_565,true);
+        Mat GaussianBlur = new  Mat(img.size(),img.type());
+        Imgproc.GaussianBlur(img,GaussianBlur,new Size(7,7),0);
+        Utils.matToBitmap(GaussianBlur,GaussianblurBitmap);
+        ivImage.setImageBitmap(GaussianblurBitmap);
+    }
+    public  void BilateralFilter(View v){
+        Mat img =new Mat();
+        Utils.bitmapToMat(noiseBitmap,img);
+        BilateralFilterBitmap=noiseBitmap.copy(Bitmap.Config.RGB_565,true);
+        Mat BilateralFilter = new Mat(img.size(),img.type());
+        Imgproc.bilateralFilter(img,BilateralFilter,7,7,0);
+        Utils.matToBitmap(BilateralFilter,BilateralFilterBitmap);
+        ivImage.setImageBitmap(BilateralFilterBitmap);
+    }
     @Override
     protected void onActivityResult(int requestCode,int resultCode,Intent data){
 
@@ -235,7 +290,8 @@ public class MainActivity extends AppCompatActivity {
             }else if (requestCode==GRAY_SCALE){
 
                 ivImage.setImageBitmap(grayBitmap);
-            }}
+            }
+        }
 
     }
 
