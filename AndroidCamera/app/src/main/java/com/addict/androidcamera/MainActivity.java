@@ -59,7 +59,7 @@ import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
-
+import java.lang.StrictMath;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -73,6 +73,7 @@ public class MainActivity extends AppCompatActivity {
     Bitmap GaussianblurBitmap;
     Bitmap BilateralFilterBitmap;
     Uri imageUri;
+    double psnr;
 
 
     @Override
@@ -141,8 +142,8 @@ public class MainActivity extends AppCompatActivity {
                 }else if (items[i].equals("MedianFilter")) {
 
                     MedianFilter(ivImage);
-                    /*Toast.makeText(getApplicationContext(), "The value of PSNR is :"+ MedianPSNR(), Toast.LENGTH_SHORT).show();*/
-                    MedianPSNR();
+                    psnr=MedianPSNR();
+                    Toast.makeText(getApplicationContext(), "The value of PSNR is :"+String.valueOf(psnr), Toast.LENGTH_LONG).show();
 
                 }
                 else if (items[i].equals("MeanFilter")){
@@ -187,8 +188,7 @@ public class MainActivity extends AppCompatActivity {
         startActivityForResult(myIntent,4);
     }
 
-    public  void convertToGray(View v)
-    {
+    public  void convertToGray(View v) {
         Mat Rgba = new Mat();
         Mat grayMat = new Mat();
         BitmapFactory.Options o = new BitmapFactory.Options();
@@ -228,24 +228,28 @@ public class MainActivity extends AppCompatActivity {
         Utils.matToBitmap(median,medianBitmap);
         ivImage.setImageBitmap(medianBitmap);
     }
-    public double MedianPSNR()
-    {
-        Mat GrayImg = new Mat();
-        Utils.bitmapToMat(grayBitmap,GrayImg);
-        Mat MedianImg = new Mat();
-        Utils.bitmapToMat(noiseBitmap,MedianImg );
-        Mat dst = GrayImg.clone();
-        dst.convertTo(dst,CvType.CV_32F);
-        Core.subtract(GrayImg,MedianImg,dst);
-        Core.multiply(dst,dst,dst);
-        MatOfDouble mean = new MatOfDouble ();
-        Core.meanStdDev(dst,mean,null);
-        Scalar mean1=Core.sumElems(mean) ;
-        Core.meanStdDev(dst,mean,null);
-        double psnr = 10*Math.log(10)*(255*255/mean1.val[0]);
-        return psnr;
 
+    public double MedianPSNR() {
+        Mat GrayImg = new Mat();
+        Utils.bitmapToMat(grayBitmap, GrayImg);
+        Mat MedianImg = new Mat();
+        Utils.bitmapToMat(medianBitmap, MedianImg);
+        Mat dst = new Mat();
+        Core.absdiff(GrayImg, MedianImg, dst);
+        dst.convertTo(dst, CvType.CV_32F);
+        Core.multiply(dst, dst, dst);
+        Scalar s =  Core.sumElems(dst);
+        double sse = s.val[0] + s.val[1] + s.val[2];
+        if (sse <= 1e-10)
+            return 0;
+        else
+            {
+            double mse = sse / (double) (GrayImg.channels() * GrayImg.total());
+            double psnr = 10 * Math.log10 ((255 * 255) / mse);
+            return psnr;
+             }
     }
+
     public void MeanFilter(View v){
         Mat img = new Mat();
         Utils.bitmapToMat(noiseBitmap,img);
