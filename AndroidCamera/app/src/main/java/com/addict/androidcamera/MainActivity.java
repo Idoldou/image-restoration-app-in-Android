@@ -141,6 +141,8 @@ public class MainActivity extends AppCompatActivity {
                 }else if (items[i].equals("MedianFilter")) {
 
                     MedianFilter(ivImage);
+                    /*Toast.makeText(getApplicationContext(), "The value of PSNR is :"+ MedianPSNR(), Toast.LENGTH_SHORT).show();*/
+                    MedianPSNR();
 
                 }
                 else if (items[i].equals("MeanFilter")){
@@ -197,7 +199,8 @@ public class MainActivity extends AppCompatActivity {
         grayBitmap=Bitmap.createBitmap(width,height,Bitmap.Config.RGB_565);
         //bitmap to MAT
         Utils.bitmapToMat(imageBitmap,Rgba);
-        Imgproc.cvtColor(Rgba,grayMat,Imgproc.COLOR_RGB2GRAY);
+        Imgproc.cvtColor(Rgba,Rgba,Imgproc.COLOR_BGRA2BGR);
+        Imgproc.cvtColor(Rgba,grayMat,Imgproc.COLOR_BGR2GRAY);
         Utils.matToBitmap(grayMat,grayBitmap);
         ivImage.setImageBitmap(grayBitmap);
     }
@@ -208,10 +211,8 @@ public class MainActivity extends AppCompatActivity {
         Utils.bitmapToMat(grayBitmap,img);
         noiseBitmap = grayBitmap.copy(Bitmap.Config.RGB_565,true);
         Mat noiseMat = new Mat(img.size(), img.type());
-        MatOfDouble mean = new MatOfDouble ();
-        MatOfDouble dev = new MatOfDouble ();
-        Core.meanStdDev(img,mean,dev);
-        Core.randn(noiseMat,mean.get(0,0)[0], dev.get(0,0)[0]);
+        Core.randn(noiseMat,0,0.5);
+        Core.normalize(noiseMat,noiseMat,0,255,Core.NORM_MINMAX);
         Core.add(img,noiseMat,img);
         Core.normalize(img,img,0,255,Core.NORM_MINMAX);
         Utils.matToBitmap(img,noiseBitmap);
@@ -224,26 +225,33 @@ public class MainActivity extends AppCompatActivity {
         medianBitmap = noiseBitmap.copy(Bitmap.Config.RGB_565,true);
         Mat median = new  Mat(img.size(),img.type());
         Imgproc.medianBlur(img,median,7);
-        Mat dst = img.clone();
+        Utils.matToBitmap(median,medianBitmap);
+        ivImage.setImageBitmap(medianBitmap);
+    }
+    public double MedianPSNR()
+    {
+        Mat GrayImg = new Mat();
+        Utils.bitmapToMat(grayBitmap,GrayImg);
+        Mat MedianImg = new Mat();
+        Utils.bitmapToMat(noiseBitmap,MedianImg );
+        Mat dst = GrayImg.clone();
         dst.convertTo(dst,CvType.CV_32F);
-        Core.subtract(img,median,dst);
+        Core.subtract(GrayImg,MedianImg,dst);
         Core.multiply(dst,dst,dst);
         MatOfDouble mean = new MatOfDouble ();
         Core.meanStdDev(dst,mean,null);
         Scalar mean1=Core.sumElems(mean) ;
         Core.meanStdDev(dst,mean,null);
         double psnr = 10*Math.log(10)*(255*255/mean1.val[0]);
-        Toast.makeText(getApplicationContext(),String.valueOf(psnr), Toast.LENGTH_SHORT).show();
-        Utils.matToBitmap(median,medianBitmap);
-        ivImage.setImageBitmap(medianBitmap);
-        
+        return psnr;
+
     }
     public void MeanFilter(View v){
         Mat img = new Mat();
         Utils.bitmapToMat(noiseBitmap,img);
         meanBitmap=noiseBitmap.copy(Bitmap.Config.RGB_565,true);
         Mat mean = new  Mat(img.size(),img.type());
-        Imgproc.blur(img,mean,new Size(7,7));
+        Imgproc.blur(img,mean,new Size(5,5));
         Utils.matToBitmap(mean,meanBitmap);
         ivImage.setImageBitmap(meanBitmap);
     }
@@ -253,7 +261,7 @@ public class MainActivity extends AppCompatActivity {
         Utils.bitmapToMat(noiseBitmap,img);
         GaussianblurBitmap=noiseBitmap.copy(Bitmap.Config.RGB_565,true);
         Mat GaussianBlur = new  Mat(img.size(),img.type());
-        Imgproc.GaussianBlur(img,GaussianBlur,new Size(7,7),0);
+        Imgproc.GaussianBlur(img,GaussianBlur,new Size(5,5),2,2,1);
         Utils.matToBitmap(GaussianBlur,GaussianblurBitmap);
         ivImage.setImageBitmap(GaussianblurBitmap);
     }
@@ -263,7 +271,7 @@ public class MainActivity extends AppCompatActivity {
         Imgproc.cvtColor(img,img,Imgproc.COLOR_BGRA2BGR);
         BilateralFilterBitmap=noiseBitmap.copy(Bitmap.Config.RGB_565,true);
         Mat BilateralBlur= img.clone();
-        Imgproc.bilateralFilter(img,BilateralBlur,7,7,7);
+        Imgproc.bilateralFilter(img,BilateralBlur,10,250,50);
         Imgproc.cvtColor(img,img,Imgproc.COLOR_RGB2RGBA);
         Utils.matToBitmap(BilateralBlur,BilateralFilterBitmap);
         ivImage.setImageBitmap(BilateralFilterBitmap);
