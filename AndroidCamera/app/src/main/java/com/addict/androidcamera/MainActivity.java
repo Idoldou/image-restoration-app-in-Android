@@ -51,6 +51,7 @@ import org.opencv.core.MatOfDouble;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.photo.Photo;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -75,6 +76,7 @@ public class MainActivity extends AppCompatActivity {
     Bitmap GaussianblurBitmap;
     Bitmap BilateralFilterBitmap;
     Bitmap WienerBitmap;
+    Bitmap BlocksBitmap;
     Uri imageUri;
     double psnr;
 
@@ -105,7 +107,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void SelectImage() {
 
-        final CharSequence[] items = {"Camera", "Gallery", "Save","GreyScale","AddNoise","MeanFilter","MedianFilter","GaussianBlur","BilateralFilter","Wiener Filter","Inpainting"};
+        final CharSequence[] items = {"Camera", "Gallery", "Save","GreyScale","AddNoise","MeanFilter","MedianFilter","GaussianBlur","BilateralFilter","WienerFilter","AddBlackBlocks","Inpainting"};
         AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
         builder.setTitle("Functions");
         builder.setItems(items, new DialogInterface.OnClickListener() {
@@ -146,29 +148,32 @@ public class MainActivity extends AppCompatActivity {
 
                     MedianFilter(ivImage);
                     psnr=MedianPSNR();
-                    Toast.makeText(getApplicationContext(), "The value of PSNR is :"+String.valueOf(psnr), Toast.LENGTH_LONG).show();
+                    Toast.makeText(getApplicationContext(), "You are using Median Filter.The value of PSNR is :"+String.valueOf(psnr), Toast.LENGTH_LONG).show();
 
                 }
                 else if (items[i].equals("MeanFilter")){
 
                     MeanFilter(ivImage);
                     psnr=MeanPSNR();
-                    Toast.makeText(getApplicationContext(), "The value of PSNR is :"+String.valueOf(psnr), Toast.LENGTH_LONG).show();
+                    Toast.makeText(getApplicationContext(), "You are using Mean Filter.The value of PSNR is :"+String.valueOf(psnr), Toast.LENGTH_LONG).show();
 
                 }else if (items[i].equals("GaussianBlur")){
 
                     Gaussianblur(ivImage);
                     psnr = GausssianPSNR();
-                    Toast.makeText(getApplicationContext(), "The value of PSNR is :"+String.valueOf(psnr), Toast.LENGTH_LONG).show();
+                    Toast.makeText(getApplicationContext(), "You are using Gaussian Filter.The value of PSNR is :"+String.valueOf(psnr), Toast.LENGTH_LONG).show();
 
                 }else if (items[i].equals("BilateralFilter")) {
 
                     BilateralFilter(ivImage);
                     psnr = BilateralPSNR();
-                    Toast.makeText(getApplicationContext(), "The value of PSNR is :"+String.valueOf(psnr), Toast.LENGTH_LONG).show();
-                }else if (items[i].equals("Wiener Filter")) {
-
+                    Toast.makeText(getApplicationContext(), "You are using Bilateral Filter.The value of PSNR is :"+String.valueOf(psnr), Toast.LENGTH_LONG).show();
+                }else if (items[i].equals("WienerFilter")) {
                     WienerFilter(ivImage);
+                }else if (items[i].equals("AddBlackBlocks")) {
+                    AddBlocks(ivImage);
+                }else if (items[i].equals("Inpainting")) {
+                    Inpaint(ivImage);
                 }
             }
         });
@@ -208,13 +213,27 @@ public class MainActivity extends AppCompatActivity {
         o.inSampleSize=4;
         int width = imageBitmap.getWidth();
         int height= imageBitmap.getHeight();
-        grayBitmap=Bitmap.createBitmap(width,height,Bitmap.Config.RGB_565);
+        grayBitmap=Bitmap.createBitmap(width,height,Bitmap.Config.ARGB_8888);
         //bitmap to MAT
         Utils.bitmapToMat(imageBitmap,Rgba);
-        Imgproc.cvtColor(Rgba,Rgba,Imgproc.COLOR_BGRA2BGR);
+        Rgba.convertTo(Rgba,CvType.CV_8U);
         Imgproc.cvtColor(Rgba,grayMat,Imgproc.COLOR_BGR2GRAY);
         Utils.matToBitmap(grayMat,grayBitmap);
         ivImage.setImageBitmap(grayBitmap);
+    }
+    public  void AddBlocks(View v){
+        Mat gray = new Mat();
+        Utils.bitmapToMat(imageBitmap,gray);
+        Imgproc.cvtColor(gray,gray,Imgproc.COLOR_BGRA2GRAY);
+        BlocksBitmap = imageBitmap.copy(Bitmap.Config.RGB_565,true);
+        Mat blocks = new Mat(gray.size(),gray.type());
+        Core.randu(blocks,0,255);
+        /*blocks.setTo(0,blocks<0.3);
+        blocks.setTo(1,blocks>0.3);*/
+        Imgproc.threshold(blocks,blocks,77,1,Imgproc.THRESH_BINARY);
+        Core.multiply(gray,blocks,gray);
+        Utils.matToBitmap(gray,BlocksBitmap);
+        ivImage.setImageBitmap(BlocksBitmap);
     }
 
 
@@ -295,7 +314,7 @@ public class MainActivity extends AppCompatActivity {
     public  void Gaussianblur(View v){
         Mat img = new Mat();
         Utils.bitmapToMat(noiseBitmap,img);
-        GaussianblurBitmap=noiseBitmap.copy(Bitmap.Config.RGB_565,true);
+        GaussianblurBitmap = noiseBitmap.copy(Bitmap.Config.RGB_565,true);
         Mat GaussianBlur = new  Mat(img.size(),img.type());
         Imgproc.GaussianBlur(img,GaussianBlur,new Size(5,5),2,2,1);
         Utils.matToBitmap(GaussianBlur,GaussianblurBitmap);
@@ -390,6 +409,9 @@ public class MainActivity extends AppCompatActivity {
         dst2.convertTo(dst2,CvType.CV_8UC1);
         Utils.matToBitmap(dst2,WienerBitmap);
         ivImage.setImageBitmap(WienerBitmap);
+    }
+    public  void Inpaint(View v){
+
     }
     @Override
     protected void onActivityResult(int requestCode,int resultCode,Intent data){
