@@ -5,6 +5,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Camera;
+import android.graphics.Color;
 import android.graphics.ColorSpace;
 import android.media.audiofx.NoiseSuppressor;
 import android.net.Uri;
@@ -77,6 +78,8 @@ public class MainActivity extends AppCompatActivity {
     Bitmap BilateralFilterBitmap;
     Bitmap WienerBitmap;
     Bitmap BlocksBitmap;
+    Bitmap InpaintBitmap;
+    Bitmap InpaintBitmap2;
     Uri imageUri;
     double psnr;
 
@@ -107,7 +110,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void SelectImage() {
 
-        final CharSequence[] items = {"Camera", "Gallery", "Save","GreyScale","AddNoise","MeanFilter","MedianFilter","GaussianBlur","BilateralFilter","WienerFilter","AddBlackBlocks","Inpainting"};
+        final CharSequence[] items = {"Camera", "Gallery", "Save","GreyScale","AddNoise","MeanFilter","MedianFilter","GaussianBlur","BilateralFilter","WienerFilter","AddBlackBlocks","Inpainting","Inpainting2"};
         AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
         builder.setTitle("Functions");
         builder.setItems(items, new DialogInterface.OnClickListener() {
@@ -174,6 +177,8 @@ public class MainActivity extends AppCompatActivity {
                     AddBlocks(ivImage);
                 }else if (items[i].equals("Inpainting")) {
                     Inpaint(ivImage);
+                }else if (items[i].equals("Inpainting2")) {
+                    Inpaint2(ivImage);
                 }
             }
         });
@@ -222,17 +227,16 @@ public class MainActivity extends AppCompatActivity {
         ivImage.setImageBitmap(grayBitmap);
     }
     public  void AddBlocks(View v){
-        Mat gray = new Mat();
-        Utils.bitmapToMat(imageBitmap,gray);
-        Imgproc.cvtColor(gray,gray,Imgproc.COLOR_BGRA2GRAY);
+        Mat img = new Mat();
+        Utils.bitmapToMat(imageBitmap,img);
         BlocksBitmap = imageBitmap.copy(Bitmap.Config.RGB_565,true);
-        Mat blocks = new Mat(gray.size(),gray.type());
+        Mat blocks = new Mat(img.size(),img.type());
         Core.randu(blocks,0,255);
         /*blocks.setTo(0,blocks<0.3);
         blocks.setTo(1,blocks>0.3);*/
         Imgproc.threshold(blocks,blocks,77,1,Imgproc.THRESH_BINARY);
-        Core.multiply(gray,blocks,gray);
-        Utils.matToBitmap(gray,BlocksBitmap);
+        Core.multiply(img,blocks,img);
+        Utils.matToBitmap(img,BlocksBitmap);
         ivImage.setImageBitmap(BlocksBitmap);
     }
 
@@ -412,7 +416,35 @@ public class MainActivity extends AppCompatActivity {
     }
     public  void Inpaint(View v){
 
+        Mat broken = new Mat();
+        Utils.bitmapToMat(BlocksBitmap,broken);
+        Imgproc.cvtColor(broken,broken,Imgproc.COLOR_BGRA2BGR);
+        InpaintBitmap=BlocksBitmap.copy(Bitmap.Config.RGB_565,true);
+        Mat mask = new Mat();
+        Imgproc.threshold(broken,mask,0,255,Imgproc.THRESH_BINARY_INV);
+        Imgproc.cvtColor(mask,mask,Imgproc.COLOR_BGRA2GRAY);
+        Mat repair = new Mat();
+        Photo.inpaint(broken,mask,repair,1,Photo.INPAINT_TELEA);
+        Utils.matToBitmap(repair,InpaintBitmap);
+        ivImage.setImageBitmap(InpaintBitmap);
+
     }
+    public  void Inpaint2(View v){
+
+        Mat broken = new Mat();
+        Utils.bitmapToMat(BlocksBitmap,broken);
+        Imgproc.cvtColor(broken,broken,Imgproc.COLOR_BGRA2BGR);
+        InpaintBitmap2=BlocksBitmap.copy(Bitmap.Config.RGB_565,true);
+        Mat mask = new Mat();
+        Imgproc.threshold(broken,mask,0,255,Imgproc.THRESH_BINARY_INV);
+        Imgproc.cvtColor(mask,mask,Imgproc.COLOR_BGRA2GRAY);
+        Mat repair = new Mat();
+        Photo.inpaint(broken,mask,repair,1,Photo.INPAINT_NS);
+        Utils.matToBitmap(repair,InpaintBitmap2);
+        ivImage.setImageBitmap(InpaintBitmap2);
+
+    }
+
     @Override
     protected void onActivityResult(int requestCode,int resultCode,Intent data){
 
