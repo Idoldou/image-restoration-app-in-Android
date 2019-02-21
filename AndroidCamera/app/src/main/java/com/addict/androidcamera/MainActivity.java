@@ -230,6 +230,7 @@ public class MainActivity extends AppCompatActivity {
         Mat img = new Mat();
         Utils.bitmapToMat(imageBitmap,img);
         BlocksBitmap = imageBitmap.copy(Bitmap.Config.RGB_565,true);
+        Imgproc.cvtColor(img,img,Imgproc.COLOR_BGRA2GRAY);
         Mat blocks = new Mat(img.size(),img.type());
         Core.randu(blocks,0,255);
         /*blocks.setTo(0,blocks<0.3);
