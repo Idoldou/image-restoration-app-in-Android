@@ -110,7 +110,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void SelectImage() {
 
-        final CharSequence[] items = {"Camera", "Gallery", "Save","GreyScale","AddNoise","MeanFilter","MedianFilter","GaussianBlur","BilateralFilter","WienerFilter","AddBlackBlocks","Inpainting","Inpainting2"};
+        final CharSequence[] items = {"Camera", "Gallery", "Save","GreyScale","AddNoise","MeanFilter","MedianFilter","GaussianBlur","BilateralFilter",/*"WienerFilter",*/"AddBlackBlocks","InpaintingTELEA","InpaintingNS"};
         AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
         builder.setTitle("Functions");
         builder.setItems(items, new DialogInterface.OnClickListener() {
@@ -171,13 +171,13 @@ public class MainActivity extends AppCompatActivity {
                     BilateralFilter(ivImage);
                     psnr = BilateralPSNR();
                     Toast.makeText(getApplicationContext(), "You are using Bilateral Filter.The value of PSNR is :"+String.valueOf(psnr), Toast.LENGTH_LONG).show();
-                }else if (items[i].equals("WienerFilter")) {
-                    WienerFilter(ivImage);
-                }else if (items[i].equals("AddBlackBlocks")) {
+                }/*else if (items[i].equals("WienerFilter")) {
+                    WienerFilter(ivImage);*
+                }*/else if (items[i].equals("AddBlackBlocks")) {
                     AddBlocks(ivImage);
-                }else if (items[i].equals("Inpainting")) {
+                }else if (items[i].equals("InpaintingTELEA")) {
                     Inpaint(ivImage);
-                }else if (items[i].equals("Inpainting2")) {
+                }else if (items[i].equals("InpaintingNS")) {
                     Inpaint2(ivImage);
                 }
             }
@@ -213,16 +213,16 @@ public class MainActivity extends AppCompatActivity {
     public  void convertToGray(View v) {
         Mat Rgba = new Mat();
         Mat grayMat = new Mat();
-        BitmapFactory.Options o = new BitmapFactory.Options();
+        /*BitmapFactory.Options o = new BitmapFactory.Options();
         o.inDither=false;
-        o.inSampleSize=4;
+        o.inSampleSize=4;*/
         int width = imageBitmap.getWidth();
         int height= imageBitmap.getHeight();
-        grayBitmap=Bitmap.createBitmap(width,height,Bitmap.Config.ARGB_8888);
+        grayBitmap=Bitmap.createBitmap(width,height,Bitmap.Config.RGB_565);
         //bitmap to MAT
         Utils.bitmapToMat(imageBitmap,Rgba);
         Rgba.convertTo(Rgba,CvType.CV_8U);
-        Imgproc.cvtColor(Rgba,grayMat,Imgproc.COLOR_BGR2GRAY);
+        Imgproc.cvtColor(Rgba,grayMat,Imgproc.COLOR_BGRA2GRAY);
         Utils.matToBitmap(grayMat,grayBitmap);
         ivImage.setImageBitmap(grayBitmap);
     }
@@ -230,7 +230,7 @@ public class MainActivity extends AppCompatActivity {
         Mat img = new Mat();
         Utils.bitmapToMat(imageBitmap,img);
         BlocksBitmap = imageBitmap.copy(Bitmap.Config.RGB_565,true);
-        Imgproc.cvtColor(img,img,Imgproc.COLOR_BGRA2GRAY);
+
         Mat blocks = new Mat(img.size(),img.type());
         Core.randu(blocks,0,255);
         /*blocks.setTo(0,blocks<0.3);
@@ -246,11 +246,13 @@ public class MainActivity extends AppCompatActivity {
         Mat img = new Mat();
         Utils.bitmapToMat(grayBitmap,img);
         noiseBitmap = grayBitmap.copy(Bitmap.Config.RGB_565,true);
-        Mat noiseMat = new Mat(img.size(), img.type());
-        Core.randn(noiseMat,0,0.5);
-        Core.normalize(noiseMat,noiseMat,0,255,Core.NORM_MINMAX);
+        Imgproc.cvtColor(img,img,Imgproc.COLOR_BGRA2GRAY);
+        img.convertTo(img,CvType.CV_32FC1);
+        Mat noiseMat = new Mat(img.size(),img.type());
+        Core.randn(noiseMat,0,50);
         Core.add(img,noiseMat,img);
         Core.normalize(img,img,0,255,Core.NORM_MINMAX);
+        img.convertTo(img,CvType.CV_8UC1);
         Utils.matToBitmap(img,noiseBitmap);
         ivImage.setImageBitmap(noiseBitmap);
     }
@@ -260,7 +262,7 @@ public class MainActivity extends AppCompatActivity {
         Utils.bitmapToMat(noiseBitmap,img);
         medianBitmap = noiseBitmap.copy(Bitmap.Config.RGB_565,true);
         Mat median = new  Mat(img.size(),img.type());
-        Imgproc.medianBlur(img,median,7);
+        Imgproc.medianBlur(img,median,3);
         Utils.matToBitmap(median,medianBitmap);
         ivImage.setImageBitmap(medianBitmap);
     }
@@ -291,7 +293,7 @@ public class MainActivity extends AppCompatActivity {
         Utils.bitmapToMat(noiseBitmap,img);
         meanBitmap=noiseBitmap.copy(Bitmap.Config.RGB_565,true);
         Mat mean = new  Mat(img.size(),img.type());
-        Imgproc.blur(img,mean,new Size(5,5));
+        Imgproc.blur(img,mean,new Size(3,3));
         Utils.matToBitmap(mean,meanBitmap);
         ivImage.setImageBitmap(meanBitmap);
     }
@@ -321,7 +323,7 @@ public class MainActivity extends AppCompatActivity {
         Utils.bitmapToMat(noiseBitmap,img);
         GaussianblurBitmap = noiseBitmap.copy(Bitmap.Config.RGB_565,true);
         Mat GaussianBlur = new  Mat(img.size(),img.type());
-        Imgproc.GaussianBlur(img,GaussianBlur,new Size(5,5),2,2,1);
+        Imgproc.GaussianBlur(img,GaussianBlur,new Size(7,7),0,0);
         Utils.matToBitmap(GaussianBlur,GaussianblurBitmap);
         ivImage.setImageBitmap(GaussianblurBitmap);
     }
@@ -353,7 +355,7 @@ public class MainActivity extends AppCompatActivity {
         Imgproc.cvtColor(img,img,Imgproc.COLOR_BGRA2BGR);
         BilateralFilterBitmap=noiseBitmap.copy(Bitmap.Config.RGB_565,true);
         Mat BilateralBlur= img.clone();
-        Imgproc.bilateralFilter(img,BilateralBlur,10,250,50);
+        Imgproc.bilateralFilter(img,BilateralBlur,100,250,250);
         Imgproc.cvtColor(img,img,Imgproc.COLOR_RGB2RGBA);
         Utils.matToBitmap(BilateralBlur,BilateralFilterBitmap);
         ivImage.setImageBitmap(BilateralFilterBitmap);
