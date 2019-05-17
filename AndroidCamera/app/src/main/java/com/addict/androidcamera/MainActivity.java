@@ -42,6 +42,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
+import android.graphics.drawable.BitmapDrawable;
 
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
@@ -80,6 +81,7 @@ public class MainActivity extends AppCompatActivity {
     Bitmap BlocksBitmap;
     Bitmap InpaintBitmap;
     Bitmap InpaintBitmap2;
+    Bitmap FinalBitmap;
     Uri imageUri;
     double psnr;
 
@@ -110,7 +112,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void SelectImage() {
 
-        final CharSequence[] items = {"Camera", "Gallery", "Save","GreyScale","AddNoise","MeanFilter","MedianFilter","GaussianBlur","BilateralFilter",/*"WienerFilter",*/"AddBlackBlocks","InpaintingTELEA","InpaintingNS"};
+        final CharSequence[] items = {"Camera", "Gallery", "Save","GreyScale","AddNoise","MeanFilter","MedianFilter","GaussianBlur","BilateralFilter",/*"WienerFilter",*/"AddBlackBlocks","InpaintingTELEA","InpaintingNS","DeWater"};
         AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
         builder.setTitle("Functions");
         builder.setItems(items, new DialogInterface.OnClickListener() {
@@ -131,15 +133,21 @@ public class MainActivity extends AppCompatActivity {
                     startActivityForResult(intent.createChooser(intent,"Select File"), SELECT_FILE);*/
 
 
-                } else if (items[i].equals("Save")) {
+                }
+                else if (items[i].equals("Save")) {
 
-
-                    savePhotoToMySdCard(imageBitmap);
-
+                    ivImage.setDrawingCacheEnabled(true);
+                    //Setting open cache
+                    FinalBitmap = ((BitmapDrawable) ivImage.getDrawable()).getBitmap();
+                    //Get the cache directly in the ImageView
+                    ivImage.setDrawingCacheEnabled(false);
+                    // Remove the previous cache to avoid affecting the subsequent new cache
+                    savePhotoToMySdCard(FinalBitmap);
                     Toast.makeText(getApplicationContext(), "Photo has been saved to SD card!", Toast.LENGTH_SHORT).show();
+                    //tell the user they have saved image to SD card
 
-
-                }else if (items[i].equals("GreyScale")) {
+                }
+                else if (items[i].equals("GreyScale")) {
 
                     convertToGray(ivImage);
 
@@ -179,6 +187,8 @@ public class MainActivity extends AppCompatActivity {
                     Inpaint(ivImage);
                 }else if (items[i].equals("InpaintingNS")) {
                     Inpaint2(ivImage);
+                }else if (items[i].equals("DeWater")) {
+                    Inpaint3(ivImage);
                 }
             }
         });
@@ -186,14 +196,19 @@ public class MainActivity extends AppCompatActivity {
     }
     private void savePhotoToMySdCard(Bitmap bit){
         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HH_mm_ss");
+        // name the image captions as the time when it save to the sdcard
         String pname = sdf.format(new Date());
         String root = Environment.getExternalStorageDirectory().toString();
+        // get the name of home directory
         File folder = new File(root+"/SCC_Photos");
+        // create the subdirectory
         folder.mkdirs();
         File my_file = new File(folder, pname+".png");
+        // save as png format
         try {
             FileOutputStream stream = new FileOutputStream(my_file);
             bit.compress(Bitmap.CompressFormat.PNG, 80, stream);
+            // compress the quality of image to 80% of origin bitmap
             stream.flush();
             stream.close();
         } catch (FileNotFoundException e) {
@@ -228,14 +243,12 @@ public class MainActivity extends AppCompatActivity {
     }
     public  void AddBlocks(View v){
         Mat img = new Mat();
-        Utils.bitmapToMat(imageBitmap,img);
-        BlocksBitmap = imageBitmap.copy(Bitmap.Config.RGB_565,true);
-
+        Utils.bitmapToMat(grayBitmap,img);
+        Imgproc.cvtColor(img,img,Imgproc.COLOR_BGRA2GRAY);
+        BlocksBitmap = grayBitmap.copy(Bitmap.Config.RGB_565,true);
         Mat blocks = new Mat(img.size(),img.type());
         Core.randu(blocks,0,255);
-        /*blocks.setTo(0,blocks<0.3);
-        blocks.setTo(1,blocks>0.3);*/
-        Imgproc.threshold(blocks,blocks,77,1,Imgproc.THRESH_BINARY);
+        Imgproc.threshold(blocks,blocks,79,1,Imgproc.THRESH_BINARY);
         Core.multiply(img,blocks,img);
         Utils.matToBitmap(img,BlocksBitmap);
         ivImage.setImageBitmap(BlocksBitmap);
@@ -249,7 +262,7 @@ public class MainActivity extends AppCompatActivity {
         Imgproc.cvtColor(img,img,Imgproc.COLOR_BGRA2GRAY);
         img.convertTo(img,CvType.CV_32FC1);
         Mat noiseMat = new Mat(img.size(),img.type());
-        Core.randn(noiseMat,0,50);
+        Core.randn(noiseMat,0,10);
         Core.add(img,noiseMat,img);
         Core.normalize(img,img,0,255,Core.NORM_MINMAX);
         img.convertTo(img,CvType.CV_8UC1);
@@ -262,7 +275,7 @@ public class MainActivity extends AppCompatActivity {
         Utils.bitmapToMat(noiseBitmap,img);
         medianBitmap = noiseBitmap.copy(Bitmap.Config.RGB_565,true);
         Mat median = new  Mat(img.size(),img.type());
-        Imgproc.medianBlur(img,median,3);
+        Imgproc.medianBlur(img,median,5);
         Utils.matToBitmap(median,medianBitmap);
         ivImage.setImageBitmap(medianBitmap);
     }
@@ -293,7 +306,7 @@ public class MainActivity extends AppCompatActivity {
         Utils.bitmapToMat(noiseBitmap,img);
         meanBitmap=noiseBitmap.copy(Bitmap.Config.RGB_565,true);
         Mat mean = new  Mat(img.size(),img.type());
-        Imgproc.blur(img,mean,new Size(3,3));
+        Imgproc.blur(img,mean,new Size(5,5));
         Utils.matToBitmap(mean,meanBitmap);
         ivImage.setImageBitmap(meanBitmap);
     }
@@ -323,7 +336,7 @@ public class MainActivity extends AppCompatActivity {
         Utils.bitmapToMat(noiseBitmap,img);
         GaussianblurBitmap = noiseBitmap.copy(Bitmap.Config.RGB_565,true);
         Mat GaussianBlur = new  Mat(img.size(),img.type());
-        Imgproc.GaussianBlur(img,GaussianBlur,new Size(7,7),0,0);
+        Imgproc.GaussianBlur(img,GaussianBlur,new Size(5,5),0,0);
         Utils.matToBitmap(GaussianBlur,GaussianblurBitmap);
         ivImage.setImageBitmap(GaussianblurBitmap);
     }
@@ -355,7 +368,7 @@ public class MainActivity extends AppCompatActivity {
         Imgproc.cvtColor(img,img,Imgproc.COLOR_BGRA2BGR);
         BilateralFilterBitmap=noiseBitmap.copy(Bitmap.Config.RGB_565,true);
         Mat BilateralBlur= img.clone();
-        Imgproc.bilateralFilter(img,BilateralBlur,100,250,250);
+        Imgproc.bilateralFilter(img,BilateralBlur,10,50,50);
         Imgproc.cvtColor(img,img,Imgproc.COLOR_RGB2RGBA);
         Utils.matToBitmap(BilateralBlur,BilateralFilterBitmap);
         ivImage.setImageBitmap(BilateralFilterBitmap);
@@ -444,6 +457,20 @@ public class MainActivity extends AppCompatActivity {
         Mat repair = new Mat();
         Photo.inpaint(broken,mask,repair,1,Photo.INPAINT_NS);
         Utils.matToBitmap(repair,InpaintBitmap2);
+        ivImage.setImageBitmap(InpaintBitmap2);
+
+    }
+
+    public void Inpaint3(View v){
+
+        Mat broken = new Mat();
+        Utils.bitmapToMat(grayBitmap,broken);
+        Imgproc.cvtColor(broken,broken,Imgproc.COLOR_BGRA2BGR);
+        InpaintBitmap2=grayBitmap.copy(Bitmap.Config.RGB_565,true);
+        Mat mask = new Mat();
+        Imgproc.threshold(broken,mask,1,255,Imgproc.THRESH_BINARY_INV);
+        Imgproc.cvtColor(mask,mask,Imgproc.COLOR_BGRA2GRAY);
+        Utils.matToBitmap(mask,InpaintBitmap2);
         ivImage.setImageBitmap(InpaintBitmap2);
 
     }
